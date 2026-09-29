@@ -1,0 +1,1148 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>HeartBeat App Design</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F7F6F3;
+    --surface: #FFFFFF;
+    --surface-alt: #EDECEA;
+    --text: #1A1D23;
+    --text-muted: #5F6368;
+    --primary: #0A6B5C;
+    --primary-light: #E8F5F1;
+    --accent: #E04438;
+    --accent-light: #FDE8E6;
+    --border: #D4D2CE;
+    --code-bg: #F0EFEC;
+    --diagram-bg: #FAFAF8;
+    --badge-flutter: #0468D7;
+    --badge-python: #306998;
+    --badge-db: #336791;
+    --shadow: 0 1px 3px rgba(26,29,35,0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111318;
+      --surface: #1A1D24;
+      --surface-alt: #22252D;
+      --text: #E8E6E1;
+      --text-muted: #9CA0A8;
+      --primary: #3DBFA8;
+      --primary-light: #162B26;
+      --accent: #F06B62;
+      --accent-light: #2D1A18;
+      --border: #2E3039;
+      --code-bg: #1E2028;
+      --diagram-bg: #15171D;
+      --badge-flutter: #54A4F7;
+      --badge-python: #5BA0D0;
+      --badge-db: #6BA3C7;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1A1D24;
+    --surface-alt: #22252D;
+    --text: #E8E6E1;
+    --text-muted: #9CA0A8;
+    --primary: #3DBFA8;
+    --primary-light: #162B26;
+    --accent: #F06B62;
+    --accent-light: #2D1A18;
+    --border: #2E3039;
+    --code-bg: #1E2028;
+    --diagram-bg: #15171D;
+    --badge-flutter: #54A4F7;
+    --badge-python: #5BA0D0;
+    --badge-db: #6BA3C7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding-inline: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  h1, h2, h3 {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: 2.4rem;
+    margin: 2rem 0 0.3rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: 1.6rem;
+    margin: 3rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary);
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 1.2rem;
+    margin: 2rem 0 0.75rem;
+    color: var(--primary);
+  }
+
+  p { margin: 0 0 1rem; }
+
+  .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+    font-style: italic;
+  }
+
+  .stack-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .badge--flutter { background: var(--primary-light); color: var(--badge-flutter); }
+  .badge--python { background: var(--primary-light); color: var(--badge-python); }
+  .badge--db { background: var(--primary-light); color: var(--badge-db); }
+  .badge--api { background: var(--accent-light); color: var(--accent); }
+
+  .arch-diagram {
+    background: var(--diagram-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 16px;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .arch-diagram svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th {
+    background: var(--surface-alt);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+    font-size: 0.85em;
+  }
+
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .method {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    min-width: 52px;
+    text-align: center;
+  }
+  .method--get { background: #DBEAFE; color: #1D4ED8; }
+  .method--post { background: #D1FAE5; color: #047857; }
+  .method--put { background: #FEF3C7; color: #92400E; }
+  .method--delete { background: #FEE2E2; color: #B91C1C; }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .method--get { background: #1E3A5F; color: #93C5FD; }
+    :root:not([data-theme="light"]) .method--post { background: #14332A; color: #6EE7B7; }
+    :root:not([data-theme="light"]) .method--put { background: #3B2F1A; color: #FCD34D; }
+    :root:not([data-theme="light"]) .method--delete { background: #3B1C1C; color: #FCA5A5; }
+  }
+  :root[data-theme="dark"] .method--get { background: #1E3A5F; color: #93C5FD; }
+  :root[data-theme="dark"] .method--post { background: #14332A; color: #6EE7B7; }
+  :root[data-theme="dark"] .method--put { background: #3B2F1A; color: #FCD34D; }
+  :root[data-theme="dark"] .method--delete { background: #3B1C1C; color: #FCA5A5; }
+
+  pre {
+    background: var(--code-bg);
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin: 1rem 0 1.5rem;
+    border: 1px solid var(--border);
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin: 1.5rem 0;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .feature-card h4 {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-weight: 400;
+    font-size: 1.05rem;
+    margin: 0 0 8px;
+    color: var(--primary);
+  }
+
+  .feature-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .flow-num {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-top: 2px;
+  }
+
+  .flow-content {
+    flex: 1;
+  }
+
+  .flow-content strong {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .flow-content span {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .schema-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .schema-section h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--primary);
+  }
+
+  .field-row {
+    display: flex;
+    gap: 12px;
+    padding: 4px 0;
+    font-size: 0.88rem;
+    align-items: baseline;
+  }
+
+  .field-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    min-width: 160px;
+    color: var(--text);
+  }
+
+  .field-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    min-width: 100px;
+  }
+
+  .field-desc {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .field-pk { color: var(--accent); font-weight: 600; }
+  .field-fk { color: var(--badge-flutter); }
+
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+  }
+
+  .nav-tab {
+    padding: 10px 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: inherit;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .folder-tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    background: var(--code-bg);
+    padding: 16px 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .folder-tree .dir { color: var(--primary); font-weight: 500; }
+  .folder-tree .file { color: var(--text-muted); }
+  .folder-tree .comment { color: var(--text-muted); opacity: 0.6; font-style: italic; }
+
+  .screen-flow {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+    justify-content: center;
+  }
+
+  .screen-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 100px;
+    box-shadow: var(--shadow);
+  }
+
+  .screen-box small {
+    display: block;
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin-top: 4px;
+  }
+
+  .screen-arrow {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .highlight-box {
+    background: var(--primary-light);
+    border-left: 3px solid var(--primary);
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.92rem;
+  }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 1.5rem 0 2.5rem;
+    box-shadow: var(--shadow);
+  }
+
+  .toc h3 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    color: var(--text);
+  }
+
+  .toc ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .toc li {
+    padding: 3px 0;
+    font-size: 0.92rem;
+  }
+
+  .toc a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+  .toc a:hover { text-decoration: underline; }
+
+  .heart-pulse {
+    display: inline-block;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .heart-pulse { animation: none; }
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.3rem; }
+    body { padding-inline: 16px; }
+    .field-row { flex-wrap: wrap; gap: 4px; }
+    .field-name { min-width: auto; }
+    .field-type { min-width: auto; }
+    .screen-flow { flex-direction: column; }
+    .screen-arrow { transform: rotate(90deg); }
+  }
+</style>
+
+<h1><span class="heart-pulse" aria-hidden="true">&#9829;</span> HeartBeat</h1>
+<p class="subtitle">System Design Document &mdash; Health Monitoring App v1.0</p>
+
+<div class="stack-badges">
+  <span class="badge badge--flutter">Flutter / Dart</span>
+  <span class="badge badge--python">Python / FastAPI</span>
+  <span class="badge badge--db">PostgreSQL</span>
+  <span class="badge badge--api">REST API</span>
+</div>
+
+<nav class="toc">
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#overview">Overview &amp; Tech Stack</a></li>
+    <li><a href="#architecture">System Architecture</a></li>
+    <li><a href="#ppg">Heart Rate Measurement (PPG)</a></li>
+    <li><a href="#database">Database Schema</a></li>
+    <li><a href="#api">API Design</a></li>
+    <li><a href="#flutter">Flutter App Structure</a></li>
+    <li><a href="#features">Features Breakdown</a></li>
+    <li><a href="#security">Security &amp; Privacy</a></li>
+  </ol>
+</nav>
+
+<!-- ====== SECTION 1 ====== -->
+<h2 id="overview">1. Overview &amp; Tech Stack</h2>
+
+<p><strong>HeartBeat</strong> la ung dung theo doi suc khoe ca nhan, tinh nang chinh la <strong>do nhip tim bang camera truoc</strong> dien thoai su dung ky thuat Photoplethysmography (PPG). Ngoai ra app con ho tro tinh BMI, theo doi lich su chi so suc khoe, bieu do thong ke, va he thong nhac nho.</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4>Mobile App</h4>
+    <p><strong>Flutter 3.x</strong> &mdash; Cross-platform iOS/Android. Camera plugin cho PPG, fl_chart cho bieu do, local notifications cho nhac nho.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Backend API</h4>
+    <p><strong>FastAPI + Python 3.11</strong> &mdash; Async REST API, JWT auth, auto-gen OpenAPI docs. Xu ly du lieu suc khoe va sync giua cac thiet bi.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Database</h4>
+    <p><strong>PostgreSQL 15</strong> &mdash; Luu tru user profiles, heart rate records, health metrics. SQLAlchemy ORM + Alembic migration.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Infrastructure</h4>
+    <p><strong>Docker + Nginx</strong> &mdash; Containerized deployment. Redis cho caching/rate limiting. Firebase cho push notifications.</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 2 ====== -->
+<h2 id="architecture">2. System Architecture</h2>
+
+<div class="arch-diagram">
+  <svg viewBox="0 0 780 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="System architecture diagram">
+    <!-- Mobile App -->
+    <rect x="20" y="30" width="200" height="160" rx="12" fill="var(--surface)" stroke="var(--primary)" stroke-width="2"/>
+    <text x="120" y="60" text-anchor="middle" font-family="DM Serif Display, Georgia, serif" font-size="15" fill="var(--primary)">Flutter App</text>
+    <line x1="40" y1="72" x2="200" y2="72" stroke="var(--border)" stroke-width="1"/>
+    <text x="40" y="95" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Camera / PPG Engine</text>
+    <text x="40" y="115" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">BLoC State Mgmt</text>
+    <text x="40" y="135" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Local SQLite Cache</text>
+    <text x="40" y="155" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Charts &amp; UI</text>
+    <text x="40" y="175" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Push Notifications</text>
+
+    <!-- Arrow 1 -->
+    <line x1="220" y1="110" x2="290" y2="110" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <text x="255" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--text-muted)">HTTPS</text>
+
+    <!-- API Gateway -->
+    <rect x="290" y="60" width="180" height="100" rx="12" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="380" y="90" text-anchor="middle" font-family="DM Serif Display, Georgia, serif" font-size="15" fill="var(--accent)">API Gateway</text>
+    <line x1="310" y1="102" x2="450" y2="102" stroke="var(--border)" stroke-width="1"/>
+    <text x="310" y="122" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Nginx / Rate Limiting</text>
+    <text x="310" y="142" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">SSL Termination</text>
+
+    <!-- Arrow 2 -->
+    <line x1="470" y1="110" x2="540" y2="110" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- FastAPI -->
+    <rect x="540" y="20" width="220" height="190" rx="12" fill="var(--surface)" stroke="var(--badge-python)" stroke-width="2"/>
+    <text x="650" y="50" text-anchor="middle" font-family="DM Serif Display, Georgia, serif" font-size="15" fill="var(--badge-python)">FastAPI Backend</text>
+    <line x1="560" y1="62" x2="740" y2="62" stroke="var(--border)" stroke-width="1"/>
+    <text x="560" y="85" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Auth (JWT + OAuth2)</text>
+    <text x="560" y="105" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">User Management</text>
+    <text x="560" y="125" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Health Data CRUD</text>
+    <text x="560" y="145" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Statistics Engine</text>
+    <text x="560" y="165" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Reminder Scheduler</text>
+    <text x="560" y="185" font-family="Source Sans 3, sans-serif" font-size="12" fill="var(--text-muted)">Firebase Push Service</text>
+
+    <!-- DB -->
+    <rect x="540" y="260" width="105" height="70" rx="10" fill="var(--surface)" stroke="var(--badge-db)" stroke-width="2"/>
+    <text x="592" y="285" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="600" fill="var(--badge-db)">PostgreSQL</text>
+    <text x="592" y="305" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="var(--text-muted)">Primary DB</text>
+
+    <!-- Redis -->
+    <rect x="660" y="260" width="100" height="70" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="710" y="285" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="600" fill="var(--accent)">Redis</text>
+    <text x="710" y="305" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="var(--text-muted)">Cache / Queue</text>
+
+    <!-- Arrows to DB -->
+    <line x1="620" y1="210" x2="592" y2="260" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+    <line x1="680" y1="210" x2="710" y2="260" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- Firebase -->
+    <rect x="290" y="260" width="160" height="70" rx="10" fill="var(--surface)" stroke="var(--primary)" stroke-width="2"/>
+    <text x="370" y="285" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="600" fill="var(--primary)">Firebase</text>
+    <text x="370" y="305" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="var(--text-muted)">Push Notifications</text>
+
+    <!-- Arrow Firebase -->
+    <line x1="540" y1="180" x2="450" y2="280" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+
+    <!-- Arrow Firebase to Mobile -->
+    <line x1="290" y1="295" x2="120" y2="200" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+    <text x="180" y="260" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--text-muted)">FCM/APNs</text>
+
+    <!-- Arrowhead marker -->
+    <defs>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="var(--text-muted)"/>
+      </marker>
+    </defs>
+  </svg>
+</div>
+
+<!-- ====== SECTION 3 ====== -->
+<h2 id="ppg">3. Heart Rate Measurement (PPG)</h2>
+
+<div class="highlight-box">
+  <strong>Photoplethysmography (PPG)</strong> la ky thuat quang hoc do su thay doi the tich mau trong mao mach. Khi dat ngon tay len camera truoc, anh sang tu flash/man hinh chieu qua da &mdash; moi nhip tim lam thay doi luong mau hap thu anh sang, tao ra tin hieu tuan hoan co the do duoc tu camera frames.
+</div>
+
+<h3>PPG Processing Pipeline</h3>
+
+<div class="flow-step">
+  <div class="flow-num">1</div>
+  <div class="flow-content">
+    <strong>Camera Capture</strong>
+    <span>Mo camera truoc, bat flash/tang sang man hinh. Capture frame lien tuc o 30fps. User dat ngon tay che kin camera.</span>
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">2</div>
+  <div class="flow-content">
+    <strong>Frame Preprocessing</strong>
+    <span>Trich xuat gia tri trung binh kenh Red va Green tu moi frame. Kenh Red nhay nhat voi su thay doi hemoglobin.</span>
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">3</div>
+  <div class="flow-content">
+    <strong>Signal Filtering</strong>
+    <span>Ap dung Bandpass Filter (0.7Hz &ndash; 3.5Hz, tuong duong 42&ndash;210 BPM) de loai bo nhieu. Dung Butterworth filter bac 4.</span>
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">4</div>
+  <div class="flow-content">
+    <strong>Peak Detection</strong>
+    <span>Tim cac dinh (peaks) trong tin hieu da loc. Tinh khoang cach giua cac dinh lien tiep (IBI &ndash; Inter-Beat Interval).</span>
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">5</div>
+  <div class="flow-content">
+    <strong>BPM Calculation</strong>
+    <span>BPM = 60 / avg(IBI). Lay trung binh 10 giay cuoi, loai bo outliers. Hien thi ket qua realtime tren UI.</span>
+  </div>
+</div>
+
+<h3>Flutter Implementation Approach</h3>
+<pre>// Core PPG processing flow (Dart)
+class PPGProcessor {
+  final _buffer = &lt;double&gt;[];       // Raw signal buffer
+  final _bpmStream = StreamController&lt;int&gt;.broadcast();
+
+  void processFrame(CameraImage image) {
+    // 1. Extract average Red channel intensity
+    final avgRed = _extractRedChannel(image);
+    _buffer.add(avgRed);
+
+    if (_buffer.length >= 300) {       // 10s at 30fps
+      // 2. Bandpass filter 0.7-3.5 Hz
+      final filtered = _butterworthFilter(_buffer);
+      // 3. Find peaks
+      final peaks = _detectPeaks(filtered);
+      // 4. Calculate BPM
+      final bpm = _calculateBPM(peaks);
+      _bpmStream.add(bpm);
+      _buffer.removeRange(0, 30);      // Sliding window
+    }
+  }
+}</pre>
+
+<h3>Do chinh xac &amp; Gioi han</h3>
+<div class="overflow-table" style="overflow-x:auto">
+<table>
+  <thead><tr><th>Yeu to</th><th>Anh huong</th><th>Giai phap</th></tr></thead>
+  <tbody>
+    <tr><td>Anh sang moi truong</td><td>Nhieu tin hieu</td><td>Dung flash LED hoac tang do sang man hinh lam nguon sang</td></tr>
+    <tr><td>Cu dong ngon tay</td><td>Motion artifacts</td><td>Phat hien motion qua accelerometer, yeu cau giu yen</td></tr>
+    <tr><td>Mau da / Do day da</td><td>Cuong do tin hieu khac nhau</td><td>Auto-gain adjustment, adaptive threshold</td></tr>
+    <tr><td>Tan so lay mau camera</td><td>Do phan giai BPM</td><td>Yeu cau toi thieu 30fps, noi suy tin hieu</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ====== SECTION 4 ====== -->
+<h2 id="database">4. Database Schema</h2>
+
+<div class="schema-section">
+  <h4>users</h4>
+  <div class="field-row"><span class="field-name field-pk">id</span><span class="field-type">UUID PK</span><span class="field-desc">Primary key</span></div>
+  <div class="field-row"><span class="field-name">email</span><span class="field-type">VARCHAR(255)</span><span class="field-desc">Unique, dang nhap</span></div>
+  <div class="field-row"><span class="field-name">password_hash</span><span class="field-type">VARCHAR(255)</span><span class="field-desc">Bcrypt hash</span></div>
+  <div class="field-row"><span class="field-name">full_name</span><span class="field-type">VARCHAR(100)</span><span class="field-desc">Ten nguoi dung</span></div>
+  <div class="field-row"><span class="field-name">date_of_birth</span><span class="field-type">DATE</span><span class="field-desc">Ngay sinh, tinh tuoi</span></div>
+  <div class="field-row"><span class="field-name">gender</span><span class="field-type">ENUM</span><span class="field-desc">male / female / other</span></div>
+  <div class="field-row"><span class="field-name">avatar_url</span><span class="field-type">VARCHAR(500)</span><span class="field-desc">Link anh dai dien</span></div>
+  <div class="field-row"><span class="field-name">created_at</span><span class="field-type">TIMESTAMPTZ</span><span class="field-desc">Thoi diem tao tai khoan</span></div>
+  <div class="field-row"><span class="field-name">is_active</span><span class="field-type">BOOLEAN</span><span class="field-desc">Trang thai tai khoan</span></div>
+</div>
+
+<div class="schema-section">
+  <h4>health_profiles</h4>
+  <div class="field-row"><span class="field-name field-pk">id</span><span class="field-type">UUID PK</span><span class="field-desc">Primary key</span></div>
+  <div class="field-row"><span class="field-name field-fk">user_id</span><span class="field-type">UUID FK</span><span class="field-desc">&rarr; users.id</span></div>
+  <div class="field-row"><span class="field-name">height_cm</span><span class="field-type">DECIMAL(5,2)</span><span class="field-desc">Chieu cao (cm)</span></div>
+  <div class="field-row"><span class="field-name">weight_kg</span><span class="field-type">DECIMAL(5,2)</span><span class="field-desc">Can nang (kg)</span></div>
+  <div class="field-row"><span class="field-name">bmi</span><span class="field-type">DECIMAL(4,1)</span><span class="field-desc">Computed: weight / (height/100)^2</span></div>
+  <div class="field-row"><span class="field-name">blood_type</span><span class="field-type">VARCHAR(5)</span><span class="field-desc">A+, B-, O+, AB+...</span></div>
+  <div class="field-row"><span class="field-name">medical_conditions</span><span class="field-type">TEXT[]</span><span class="field-desc">Danh sach benh ly</span></div>
+  <div class="field-row"><span class="field-name">updated_at</span><span class="field-type">TIMESTAMPTZ</span><span class="field-desc">Lan cap nhat cuoi</span></div>
+</div>
+
+<div class="schema-section">
+  <h4>heart_rate_records</h4>
+  <div class="field-row"><span class="field-name field-pk">id</span><span class="field-type">UUID PK</span><span class="field-desc">Primary key</span></div>
+  <div class="field-row"><span class="field-name field-fk">user_id</span><span class="field-type">UUID FK</span><span class="field-desc">&rarr; users.id</span></div>
+  <div class="field-row"><span class="field-name">bpm</span><span class="field-type">INTEGER</span><span class="field-desc">Nhip tim (beats per minute)</span></div>
+  <div class="field-row"><span class="field-name">confidence</span><span class="field-type">DECIMAL(3,2)</span><span class="field-desc">Do tin cay 0.0&ndash;1.0</span></div>
+  <div class="field-row"><span class="field-name">measurement_duration</span><span class="field-type">INTEGER</span><span class="field-desc">Thoi gian do (giay)</span></div>
+  <div class="field-row"><span class="field-name">context</span><span class="field-type">ENUM</span><span class="field-desc">resting / active / post_exercise</span></div>
+  <div class="field-row"><span class="field-name">raw_signal</span><span class="field-type">JSONB</span><span class="field-desc">Du lieu tin hieu tho (optional)</span></div>
+  <div class="field-row"><span class="field-name">measured_at</span><span class="field-type">TIMESTAMPTZ</span><span class="field-desc">Thoi diem do</span></div>
+  <div class="field-row"><span class="field-name">device_info</span><span class="field-type">JSONB</span><span class="field-desc">{model, os, camera_fps}</span></div>
+</div>
+
+<div class="schema-section">
+  <h4>weight_records</h4>
+  <div class="field-row"><span class="field-name field-pk">id</span><span class="field-type">UUID PK</span><span class="field-desc">Primary key</span></div>
+  <div class="field-row"><span class="field-name field-fk">user_id</span><span class="field-type">UUID FK</span><span class="field-desc">&rarr; users.id</span></div>
+  <div class="field-row"><span class="field-name">weight_kg</span><span class="field-type">DECIMAL(5,2)</span><span class="field-desc">Can nang</span></div>
+  <div class="field-row"><span class="field-name">bmi</span><span class="field-type">DECIMAL(4,1)</span><span class="field-desc">BMI tai thoi diem do</span></div>
+  <div class="field-row"><span class="field-name">recorded_at</span><span class="field-type">TIMESTAMPTZ</span><span class="field-desc">Thoi diem ghi</span></div>
+</div>
+
+<div class="schema-section">
+  <h4>reminders</h4>
+  <div class="field-row"><span class="field-name field-pk">id</span><span class="field-type">UUID PK</span><span class="field-desc">Primary key</span></div>
+  <div class="field-row"><span class="field-name field-fk">user_id</span><span class="field-type">UUID FK</span><span class="field-desc">&rarr; users.id</span></div>
+  <div class="field-row"><span class="field-name">type</span><span class="field-type">ENUM</span><span class="field-desc">heart_rate / water / exercise / medication / custom</span></div>
+  <div class="field-row"><span class="field-name">title</span><span class="field-type">VARCHAR(200)</span><span class="field-desc">Tieu de nhac nho</span></div>
+  <div class="field-row"><span class="field-name">schedule_cron</span><span class="field-type">VARCHAR(50)</span><span class="field-desc">Cron expression, e.g. "0 8 * * *"</span></div>
+  <div class="field-row"><span class="field-name">is_enabled</span><span class="field-type">BOOLEAN</span><span class="field-desc">Bat/tat nhac nho</span></div>
+  <div class="field-row"><span class="field-name">next_trigger_at</span><span class="field-type">TIMESTAMPTZ</span><span class="field-desc">Lan nhac tiep theo</span></div>
+</div>
+
+<div class="schema-section">
+  <h4>health_goals</h4>
+  <div class="field-row"><span class="field-name field-pk">id</span><span class="field-type">UUID PK</span><span class="field-desc">Primary key</span></div>
+  <div class="field-row"><span class="field-name field-fk">user_id</span><span class="field-type">UUID FK</span><span class="field-desc">&rarr; users.id</span></div>
+  <div class="field-row"><span class="field-name">type</span><span class="field-type">ENUM</span><span class="field-desc">weight / heart_rate / water_intake / exercise</span></div>
+  <div class="field-row"><span class="field-name">target_value</span><span class="field-type">DECIMAL(8,2)</span><span class="field-desc">Gia tri muc tieu</span></div>
+  <div class="field-row"><span class="field-name">current_value</span><span class="field-type">DECIMAL(8,2)</span><span class="field-desc">Gia tri hien tai</span></div>
+  <div class="field-row"><span class="field-name">unit</span><span class="field-type">VARCHAR(20)</span><span class="field-desc">kg, bpm, ml, minutes</span></div>
+  <div class="field-row"><span class="field-name">deadline</span><span class="field-type">DATE</span><span class="field-desc">Han hoan thanh</span></div>
+  <div class="field-row"><span class="field-name">status</span><span class="field-type">ENUM</span><span class="field-desc">active / completed / abandoned</span></div>
+</div>
+
+<!-- ====== SECTION 5 ====== -->
+<h2 id="api">5. API Design</h2>
+
+<div class="nav-tabs" role="tablist">
+  <button class="nav-tab active" role="tab" data-tab="auth" aria-selected="true">Auth</button>
+  <button class="nav-tab" role="tab" data-tab="profile" aria-selected="false">Profile</button>
+  <button class="nav-tab" role="tab" data-tab="heartrate" aria-selected="false">Heart Rate</button>
+  <button class="nav-tab" role="tab" data-tab="health" aria-selected="false">Health</button>
+  <button class="nav-tab" role="tab" data-tab="reminders-tab" aria-selected="false">Reminders</button>
+  <button class="nav-tab" role="tab" data-tab="stats" aria-selected="false">Stats</button>
+</div>
+
+<div id="auth" class="tab-panel active" role="tabpanel">
+  <p>Base URL: <code>/api/v1/auth</code></p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/register</code></td><td>Dang ky tai khoan moi (email, password, full_name)</td></tr>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/login</code></td><td>Dang nhap, tra ve access_token + refresh_token</td></tr>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/refresh</code></td><td>Lam moi access_token tu refresh_token</td></tr>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/logout</code></td><td>Thu hoi token, xoa refresh_token</td></tr>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/forgot-password</code></td><td>Gui email reset password</td></tr>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/reset-password</code></td><td>Dat lai password voi reset token</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <pre>{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "expires_in": 3600
+}</pre>
+</div>
+
+<div id="profile" class="tab-panel" role="tabpanel">
+  <p>Base URL: <code>/api/v1/users</code></p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/me</code></td><td>Lay thong tin user hien tai</td></tr>
+      <tr><td><span class="method method--put">PUT</span></td><td><code>/me</code></td><td>Cap nhat thong tin ca nhan</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/me/health-profile</code></td><td>Lay health profile (chieu cao, can nang, BMI...)</td></tr>
+      <tr><td><span class="method method--put">PUT</span></td><td><code>/me/health-profile</code></td><td>Cap nhat health profile</td></tr>
+      <tr><td><span class="method method--delete">DELETE</span></td><td><code>/me</code></td><td>Xoa tai khoan (soft delete)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div id="heartrate" class="tab-panel" role="tabpanel">
+  <p>Base URL: <code>/api/v1/heart-rate</code></p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/</code></td><td>Luu ket qua do nhip tim moi</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/</code></td><td>Lay danh sach records (pagination, filter by date)</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/latest</code></td><td>Lay lan do gan nhat</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/stats</code></td><td>Thong ke: avg, min, max, trend (7d/30d/90d)</td></tr>
+      <tr><td><span class="method method--delete">DELETE</span></td><td><code>/{id}</code></td><td>Xoa 1 record</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <pre>// POST /api/v1/heart-rate
+{
+  "bpm": 72,
+  "confidence": 0.95,
+  "measurement_duration": 15,
+  "context": "resting",
+  "device_info": {
+    "model": "iPhone 15",
+    "os": "iOS 17.2",
+    "camera_fps": 30
+  }
+}</pre>
+</div>
+
+<div id="health" class="tab-panel" role="tabpanel">
+  <p>Base URL: <code>/api/v1/health</code></p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/weight</code></td><td>Ghi nhan can nang moi, tu dong tinh BMI</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/weight</code></td><td>Lich su can nang (pagination)</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/bmi/history</code></td><td>Lich su BMI theo thoi gian</td></tr>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/goals</code></td><td>Tao muc tieu suc khoe moi</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/goals</code></td><td>Danh sach muc tieu</td></tr>
+      <tr><td><span class="method method--put">PUT</span></td><td><code>/goals/{id}</code></td><td>Cap nhat tien do muc tieu</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div id="reminders-tab" class="tab-panel" role="tabpanel">
+  <p>Base URL: <code>/api/v1/reminders</code></p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method method--post">POST</span></td><td><code>/</code></td><td>Tao nhac nho moi (heart_rate, water, exercise...)</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/</code></td><td>Danh sach nhac nho cua user</td></tr>
+      <tr><td><span class="method method--put">PUT</span></td><td><code>/{id}</code></td><td>Sua nhac nho (schedule, title, type)</td></tr>
+      <tr><td><span class="method method--put">PUT</span></td><td><code>/{id}/toggle</code></td><td>Bat/tat nhac nho</td></tr>
+      <tr><td><span class="method method--delete">DELETE</span></td><td><code>/{id}</code></td><td>Xoa nhac nho</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <pre>// POST /api/v1/reminders
+{
+  "type": "water",
+  "title": "Uong nuoc",
+  "schedule_cron": "0 */2 8-22 * *",  // Moi 2 gio, tu 8h-22h
+  "is_enabled": true
+}</pre>
+</div>
+
+<div id="stats" class="tab-panel" role="tabpanel">
+  <p>Base URL: <code>/api/v1/stats</code></p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/dashboard</code></td><td>Tong hop dashboard: nhip tim moi nhat, BMI, goals progress</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/heart-rate/chart</code></td><td>Du lieu bieu do nhip tim (7d/30d/90d)</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/weight/chart</code></td><td>Du lieu bieu do can nang</td></tr>
+      <tr><td><span class="method method--get">GET</span></td><td><code>/report</code></td><td>Bao cao suc khoe tong hop (monthly)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <pre>// GET /api/v1/stats/dashboard response
+{
+  "heart_rate": {
+    "latest_bpm": 72,
+    "avg_7d": 74,
+    "trend": "stable",      // "up" | "down" | "stable"
+    "zone": "normal"         // "low" | "normal" | "elevated" | "high"
+  },
+  "bmi": {
+    "current": 22.4,
+    "category": "normal",    // "underweight" | "normal" | "overweight" | "obese"
+    "change_30d": -0.3
+  },
+  "goals": {
+    "active": 3,
+    "completed_this_month": 1
+  },
+  "streaks": {
+    "daily_measurement": 12  // So ngay do lien tuc
+  }
+}</pre>
+</div>
+
+<!-- ====== SECTION 6 ====== -->
+<h2 id="flutter">6. Flutter App Structure</h2>
+
+<h3>Screen Flow</h3>
+<div class="screen-flow">
+  <div class="screen-box">Splash<small>Auto-login</small></div>
+  <div class="screen-arrow">&rarr;</div>
+  <div class="screen-box">Login<small>Register</small></div>
+  <div class="screen-arrow">&rarr;</div>
+  <div class="screen-box" style="border-color:var(--primary)">Home<small>Dashboard</small></div>
+  <div class="screen-arrow">&rarr;</div>
+  <div class="screen-box" style="border-color:var(--accent)">Measure<small>PPG Camera</small></div>
+</div>
+<div class="screen-flow">
+  <div class="screen-box">Profile<small>Health Info</small></div>
+  <div class="screen-arrow">&rarr;</div>
+  <div class="screen-box">History<small>Charts</small></div>
+  <div class="screen-arrow">&rarr;</div>
+  <div class="screen-box">Reminders<small>Settings</small></div>
+  <div class="screen-arrow">&rarr;</div>
+  <div class="screen-box">Goals<small>Progress</small></div>
+</div>
+
+<h3>Project Structure</h3>
+<div class="folder-tree">
+<span class="dir">health_app/</span><br>
+├── <span class="dir">lib/</span><br>
+│   ├── <span class="file">main.dart</span><br>
+│   ├── <span class="dir">app/</span><br>
+│   │   ├── <span class="file">app.dart</span> <span class="comment">// MaterialApp, theme, routing</span><br>
+│   │   ├── <span class="file">routes.dart</span> <span class="comment">// GoRouter config</span><br>
+│   │   └── <span class="file">theme.dart</span> <span class="comment">// Light/dark themes</span><br>
+│   ├── <span class="dir">core/</span><br>
+│   │   ├── <span class="dir">api/</span> <span class="comment">// Dio HTTP client, interceptors</span><br>
+│   │   ├── <span class="dir">storage/</span> <span class="comment">// Secure storage, SQLite</span><br>
+│   │   ├── <span class="dir">utils/</span> <span class="comment">// Date formatters, validators</span><br>
+│   │   └── <span class="dir">constants/</span> <span class="comment">// API URLs, enums</span><br>
+│   ├── <span class="dir">features/</span><br>
+│   │   ├── <span class="dir">auth/</span><br>
+│   │   │   ├── <span class="dir">bloc/</span> <span class="comment">// AuthBloc, AuthState, AuthEvent</span><br>
+│   │   │   ├── <span class="dir">data/</span> <span class="comment">// AuthRepository, AuthApi</span><br>
+│   │   │   └── <span class="dir">ui/</span> <span class="comment">// LoginScreen, RegisterScreen</span><br>
+│   │   ├── <span class="dir">heart_rate/</span><br>
+│   │   │   ├── <span class="dir">bloc/</span> <span class="comment">// HeartRateBloc</span><br>
+│   │   │   ├── <span class="dir">data/</span> <span class="comment">// HeartRateRepository</span><br>
+│   │   │   ├── <span class="dir">engine/</span> <span class="comment">// PPGProcessor, SignalFilter, PeakDetector</span><br>
+│   │   │   └── <span class="dir">ui/</span> <span class="comment">// MeasureScreen, ResultScreen, CameraPreview</span><br>
+│   │   ├── <span class="dir">dashboard/</span><br>
+│   │   │   ├── <span class="dir">bloc/</span><br>
+│   │   │   └── <span class="dir">ui/</span> <span class="comment">// HomeScreen, StatCards, QuickActions</span><br>
+│   │   ├── <span class="dir">profile/</span><br>
+│   │   │   ├── <span class="dir">bloc/</span><br>
+│   │   │   ├── <span class="dir">data/</span><br>
+│   │   │   └── <span class="dir">ui/</span> <span class="comment">// ProfileScreen, HealthProfileForm, BMICalculator</span><br>
+│   │   ├── <span class="dir">history/</span><br>
+│   │   │   └── <span class="dir">ui/</span> <span class="comment">// HistoryScreen, HeartRateChart, WeightChart</span><br>
+│   │   ├── <span class="dir">reminders/</span><br>
+│   │   │   ├── <span class="dir">bloc/</span><br>
+│   │   │   └── <span class="dir">ui/</span> <span class="comment">// RemindersScreen, ReminderForm</span><br>
+│   │   └── <span class="dir">goals/</span><br>
+│   │       ├── <span class="dir">bloc/</span><br>
+│   │       └── <span class="dir">ui/</span> <span class="comment">// GoalsScreen, GoalCard, GoalForm</span><br>
+│   └── <span class="dir">shared/</span><br>
+│       ├── <span class="dir">models/</span> <span class="comment">// User, HeartRateRecord, HealthProfile...</span><br>
+│       └── <span class="dir">widgets/</span> <span class="comment">// AppBar, BottomNav, LoadingIndicator</span><br>
+├── <span class="dir">test/</span><br>
+├── <span class="file">pubspec.yaml</span><br>
+└── <span class="dir">assets/</span>
+</div>
+
+<h3>Key Dependencies</h3>
+<div style="overflow-x:auto">
+<table>
+  <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>camera</code></td><td>Truy cap camera, stream CameraImage frames cho PPG</td></tr>
+    <tr><td><code>flutter_bloc</code></td><td>State management (BLoC pattern)</td></tr>
+    <tr><td><code>dio</code></td><td>HTTP client voi interceptors (auth, retry, logging)</td></tr>
+    <tr><td><code>fl_chart</code></td><td>Bieu do nhip tim, can nang, BMI</td></tr>
+    <tr><td><code>go_router</code></td><td>Declarative routing</td></tr>
+    <tr><td><code>flutter_secure_storage</code></td><td>Luu JWT token an toan</td></tr>
+    <tr><td><code>flutter_local_notifications</code></td><td>Local notifications cho reminders</td></tr>
+    <tr><td><code>firebase_messaging</code></td><td>Push notifications tu server</td></tr>
+    <tr><td><code>sqflite</code></td><td>Local SQLite cache (offline support)</td></tr>
+    <tr><td><code>freezed</code> + <code>json_serializable</code></td><td>Immutable models, JSON serialization</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ====== SECTION 7 ====== -->
+<h2 id="features">7. Features Breakdown</h2>
+
+<h3>A. Do nhip tim (Core Feature)</h3>
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4>Realtime Measurement</h4>
+    <p>Camera preview voi overlay huong dan. Hien thi BPM realtime, waveform animation. Do 15&ndash;30 giay.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Result Screen</h4>
+    <p>Hien thi BPM, heart rate zone (rest/normal/elevated/high), do tin cay, thoi gian do. Luu va chia se ket qua.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Heart Rate Zones</h4>
+    <p>Phan loai theo tuoi va gioi tinh: &lt;60 Low, 60&ndash;100 Normal, 100&ndash;120 Elevated, &gt;120 High (resting).</p>
+  </div>
+</div>
+
+<h3>B. BMI &amp; Health Profile</h3>
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4>BMI Calculator</h4>
+    <p>Nhap chieu cao + can nang, tu dong tinh BMI. Hien thi phan loai (gay, binh thuong, thua can, beo phi) voi visual gauge.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Weight Tracking</h4>
+    <p>Ghi nhan can nang hang ngay. Bieu do xu huong can nang theo thoi gian. Canh bao thay doi dot ngot.</p>
+  </div>
+</div>
+
+<h3>C. Lich su &amp; Thong ke</h3>
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4>Heart Rate History</h4>
+    <p>Bieu do duong theo 7/30/90 ngay. Hien thi avg, min, max. Filter theo context (resting/active).</p>
+  </div>
+  <div class="feature-card">
+    <h4>Health Report</h4>
+    <p>Bao cao suc khoe hang thang: tong hop nhip tim, BMI, muc tieu dat duoc, streak do lien tuc.</p>
+  </div>
+</div>
+
+<h3>D. Nhac nho &amp; Muc tieu</h3>
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4>Smart Reminders</h4>
+    <p>Nhac do nhip tim, uong nuoc (moi 2h), tap the duc. Custom schedule voi cron. Push notification.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Health Goals</h4>
+    <p>Dat muc tieu: can nang, nhip tim muc tieu, uong du nuoc/ngay. Progress bar, deadline, streak tracking.</p>
+  </div>
+</div>
+
+<!-- ====== SECTION 8 ====== -->
+<h2 id="security">8. Security &amp; Privacy</h2>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4>Authentication</h4>
+    <p>JWT + Refresh Token. Access token het han sau 1h. Refresh token rotate moi lan dung. Bcrypt hash password.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Data Privacy</h4>
+    <p>Du lieu suc khoe ma hoa AES-256 at rest. HTTPS bat buoc. Raw signal data chi luu khi user dong y. GDPR-ready.</p>
+  </div>
+  <div class="feature-card">
+    <h4>API Security</h4>
+    <p>Rate limiting (100 req/min). Input validation (Pydantic). CORS whitelist. SQL injection protection (ORM). Request signing.</p>
+  </div>
+  <div class="feature-card">
+    <h4>Mobile Security</h4>
+    <p>Token luu trong Secure Storage (Keychain/Keystore). Certificate pinning. Root/jailbreak detection. Obfuscation.</p>
+  </div>
+</div>
+
+<h2>Backend Project Structure</h2>
+<div class="folder-tree">
+<span class="dir">health_api/</span><br>
+├── <span class="file">main.py</span> <span class="comment">// FastAPI app entry</span><br>
+├── <span class="dir">app/</span><br>
+│   ├── <span class="file">config.py</span> <span class="comment">// Settings, env vars</span><br>
+│   ├── <span class="file">database.py</span> <span class="comment">// SQLAlchemy engine, session</span><br>
+│   ├── <span class="dir">models/</span> <span class="comment">// SQLAlchemy ORM models</span><br>
+│   │   ├── <span class="file">user.py</span><br>
+│   │   ├── <span class="file">health_profile.py</span><br>
+│   │   ├── <span class="file">heart_rate.py</span><br>
+│   │   ├── <span class="file">weight_record.py</span><br>
+│   │   ├── <span class="file">reminder.py</span><br>
+│   │   └── <span class="file">health_goal.py</span><br>
+│   ├── <span class="dir">schemas/</span> <span class="comment">// Pydantic request/response schemas</span><br>
+│   ├── <span class="dir">api/</span><br>
+│   │   ├── <span class="dir">v1/</span><br>
+│   │   │   ├── <span class="file">auth.py</span><br>
+│   │   │   ├── <span class="file">users.py</span><br>
+│   │   │   ├── <span class="file">heart_rate.py</span><br>
+│   │   │   ├── <span class="file">health.py</span><br>
+│   │   │   ├── <span class="file">reminders.py</span><br>
+│   │   │   └── <span class="file">stats.py</span><br>
+│   │   └── <span class="file">deps.py</span> <span class="comment">// Dependencies (get_db, get_current_user)</span><br>
+│   ├── <span class="dir">services/</span> <span class="comment">// Business logic layer</span><br>
+│   │   ├── <span class="file">auth_service.py</span><br>
+│   │   ├── <span class="file">heart_rate_service.py</span><br>
+│   │   ├── <span class="file">stats_service.py</span><br>
+│   │   └── <span class="file">notification_service.py</span><br>
+│   └── <span class="dir">core/</span><br>
+│       ├── <span class="file">security.py</span> <span class="comment">// JWT, password hashing</span><br>
+│       └── <span class="file">exceptions.py</span><br>
+├── <span class="dir">alembic/</span> <span class="comment">// Database migrations</span><br>
+├── <span class="dir">tests/</span><br>
+├── <span class="file">requirements.txt</span><br>
+├── <span class="file">Dockerfile</span><br>
+└── <span class="file">docker-compose.yml</span>
+</div>
+
+<script>
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.nav-tab').forEach(t => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+    document.getElementById(target).classList.add('active');
+  });
+});
+</script>
+
+</body></html>
