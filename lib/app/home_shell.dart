@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/chat/chat_head.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/heart_rate/measure_screen.dart';
 import '../features/nutrition/meals_screen.dart';
@@ -19,22 +20,41 @@ class _HomeShellState extends State<HomeShell> {
   // Kept alive between tabs so switching away and back does not refetch and
   // lose scroll position.
   late final List<Widget> _screens = [
-    DashboardScreen(onGoToTab: (i) => setState(() => _index = i)),
+    DashboardScreen(onGoToTab: _select),
     const MeasureScreen(),
-    const MealsScreen(),
     const WeightScreen(),
     const ProfileScreen(),
   ];
+
+  // The calorie target is worked out from the profile, which is edited on
+  // another tab, so this screen is rebuilt each time it is opened.
+  int _mealsVersion = 0;
+
+  void _select(int i) => setState(() {
+    if (i == 2 && _index != 2) _mealsVersion++;
+    _index = i;
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: IndexedStack(index: _index, children: _screens),
+        child: ChatHead(
+          child: IndexedStack(
+            index: _index,
+            children: [
+              _screens[0],
+              _screens[1],
+              MealsScreen(key: ValueKey(_mealsVersion)),
+              _screens[2],
+              _screens[3],
+            ],
+          ),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: _select,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

@@ -27,6 +27,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _user;
   double? _bmi;
   String? _bloodType;
+  String? _gender;
+  DateTime? _born;
   bool _loading = true;
   bool _saving = false;
 
@@ -48,6 +50,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _bmi = (profile['bmi'] as num?)?.toDouble();
       _bloodType = profile['blood_type'] as String?;
       _user = responses[1].data as Map<String, dynamic>;
+      _gender = _user?['gender'] as String?;
+      final dob = _user?['date_of_birth'] as String?;
+      _born = dob == null ? null : DateTime.tryParse(dob);
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
@@ -57,6 +62,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final height = double.tryParse(_height.text.trim().replaceAll(',', '.'));
     final weight = double.tryParse(_weight.text.trim().replaceAll(',', '.'));
     try {
+      await _api.dio.put('/auth/me', data: {
+        if (_born != null)
+          'date_of_birth': _born!.toIso8601String().substring(0, 10),
+        'gender': ?_gender,
+      });
       final response = await _api.dio.put('/health-profile', data: {
         'height_cm': ?height,
         'weight_kg': ?weight,
@@ -77,6 +87,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SnackBar(content: Text('Không lưu được, kiểm tra kết nối')),
       );
     }
+  }
+
+  Future<void> _pickBorn() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _born ?? DateTime(now.year - 25),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked != null) setState(() => _born = picked);
   }
 
   void _open(Widget screen) {
@@ -233,6 +254,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         labelText: 'Cân nặng',
                         suffixText: 'kg',
                       ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: _pickBorn,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Ngày sinh'),
+                        child: Text(
+                          _born == null
+                              ? 'Chọn'
+                              : '${_born!.day}/${_born!.month}/${_born!.year}',
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _gender,
+                      decoration: const InputDecoration(labelText: 'Giới tính'),
+                      items: const [
+                        DropdownMenuItem(value: 'male', child: Text('Nam')),
+                        DropdownMenuItem(value: 'female', child: Text('Nữ')),
+                      ],
+                      onChanged: (v) => setState(() => _gender = v),
                     ),
                   ),
                 ],

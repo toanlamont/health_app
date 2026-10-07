@@ -7,6 +7,7 @@ import 'app/home_shell.dart';
 import 'app/theme.dart';
 import 'features/auth/auth_bloc.dart';
 import 'features/auth/login_screen.dart';
+import 'features/auth/verify_email_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,9 @@ class HeartBeatApp extends StatelessWidget {
         home: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
             if (state is AuthAuthenticated) return const HomeShell();
+            if (state is AuthNeedsVerification) {
+              return VerifyEmailScreen(email: state.email);
+            }
             if (state is AuthInitial || state is AuthLoading) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
