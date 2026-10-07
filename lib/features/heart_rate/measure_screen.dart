@@ -3,13 +3,16 @@ import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 import '../../app/theme.dart';
 import '../../core/api_client.dart';
 import '../../widgets/metric_card.dart';
+import 'face_guide.dart';
 import 'signal_recorder.dart';
+import 'web_frame_sampler.dart';
 
 /// How much of the way a patch moves towards each fresh detection. At one
 /// detection every fifth frame this settles in about a second.
@@ -173,6 +176,9 @@ class _MeasureScreenState extends State<MeasureScreen> {
       enableLandmarks: true,
     ),
   );
+  // Web has neither the image stream nor ML Kit: frames are read from the
+  // browser and the face is lined up with a drawn guide instead.
+  final _webSampler = WebFrameSampler();
   bool _isDetecting = false;
   bool _faceFound = false;
   List<Rect> _faceRois = const [];
@@ -240,6 +246,29 @@ class _MeasureScreenState extends State<MeasureScreen> {
 
     _liveTimer?.cancel();
     _liveTimer = Timer.periodic(_liveEvery, (_) => _pollLive());
+
+    if (kIsWeb) {
+      // No detector to confirm a face; the guide is the user's job to fill.
+      setState(() => _faceFound = true);
+      try {
+        await _webSampler.start((rgb, luma) {
+          if (!_measuring) return;
+          _frameCount++;
+          _lastLuma = luma;
+          _recorder.addFrame(rgb);
+        });
+      } catch (_) {
+        _liveTimer?.cancel();
+        if (!mounted) return;
+        setState(() {
+          _measuring = false;
+          _done = true;
+          _failure = 'Trình duyệt không cho đọc camera. Hãy cho phép quyền '
+              'camera rồi thử lại.';
+        });
+      }
+      return;
+    }
 
     try {
       await _camera!.setFocusMode(FocusMode.locked);
@@ -521,6 +550,10 @@ class _MeasureScreenState extends State<MeasureScreen> {
   }
 
   Future<void> _releaseCamera() async {
+    if (kIsWeb) {
+      _webSampler.stop();
+      return;
+    }
     try {
       await _camera?.stopImageStream();
       await _camera?.setExposureMode(ExposureMode.auto);
@@ -668,7 +701,17 @@ class _MeasureScreenState extends State<MeasureScreen> {
                 width: 3,
               ),
             ),
-            child: ClipOval(child: _buildPreview(theme)),
+            child: ClipOval(
+              child: kIsWeb
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _buildPreview(theme),
+                        const CustomPaint(painter: _FaceGuidePainter()),
+                      ],
+                    )
+                  : _buildPreview(theme),
+            ),
           ),
         ],
       ),
@@ -857,7 +900,9 @@ class _MeasureScreenState extends State<MeasureScreen> {
           for (final tip in const [
             (Icons.wb_sunny_outlined, 'Ngồi nơi đủ sáng, ánh sáng đều lên mặt'),
             (Icons.self_improvement, 'Ngồi yên, hạn chế nói và cử động đầu'),
-            (Icons.face_outlined, 'Giữ cả khuôn mặt trong vòng tròn'),
+            kIsWeb
+                ? (Icons.face_outlined, 'Căn khuôn mặt khớp khung nét đứt')
+                : (Icons.face_outlined, 'Giữ cả khuôn mặt trong vòng tròn'),
             (Icons.timer_outlined, 'Quá trình đo mất 30 giây'),
           ])
             Padding(
@@ -943,10 +988,58 @@ class _MeasureScreenState extends State<MeasureScreen> {
     _liveTimer?.cancel();
     _progressSub?.cancel();
     _camera?.dispose();
-    _faceDetector.close();
+    if (kIsWeb) {
+      _webSampler.stop();
+    } else {
+      _faceDetector.close();
+    }
     _recorder.dispose();
     super.dispose();
   }
+}
+
+/// The face outline to line up with on web, and the patches read inside it.
+class _FaceGuidePainter extends CustomPainter {
+  const _FaceGuidePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Rect scale(Rect r) => Rect.fromLTWH(
+          r.left * size.width,
+          r.top * size.height,
+          r.width * size.width,
+          r.height * size.height,
+        );
+
+    final outline = Path()..addOval(scale(faceGuideOval));
+    final dashed = Path();
+    for (final metric in outline.computeMetrics()) {
+      for (double d = 0; d < metric.length; d += 10) {
+        dashed.addPath(metric.extractPath(d, d + 6), Offset.zero);
+      }
+    }
+    canvas.drawPath(
+      dashed,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+
+    final patch = Paint()
+      ..color = Metric.goal.withValues(alpha: 0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    for (final r in fixedSkinPatches) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(scale(r), const Radius.circular(4)),
+        patch,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_FaceGuidePainter old) => false;
 }
 
 /// Draws raw samples auto-scaled to the box, so a pulse shows up even though it
