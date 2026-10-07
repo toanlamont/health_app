@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'chat_markdown.dart';
 import 'chat_service.dart';
 import 'mascot.dart';
 
@@ -490,11 +491,20 @@ class _Bubble extends StatelessWidget {
                 ],
               ],
             )
-          : SelectableText(
-              message.content,
-              style: TextStyle(
-                color: mine ? scheme.onPrimary : scheme.onSurface,
-              ),
+          : SelectableText.rich(
+              // The user's own text is shown as typed; only replies are
+              // Markdown.
+              mine
+                  ? TextSpan(
+                      text: message.content,
+                      style: TextStyle(color: scheme.onPrimary),
+                    )
+                  : chatMarkdown(
+                      message.content,
+                      DefaultTextStyle.of(context)
+                          .style
+                          .copyWith(color: scheme.onSurface),
+                    ),
             ),
     );
     if (mine) return Align(alignment: Alignment.centerRight, child: bubble);
